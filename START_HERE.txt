@@ -1,0 +1,142 @@
+MORAG MOBILE LIGHTING APPLICATION - PROTOTYPE
+=============================================
+Step-by-step setup. Do the parts in order: A (hardware), B (ESP32), C (app), D (use it).
+
+WHAT'S IN THIS ZIP
+------------------
+  START_HERE.txt                          this guide
+  README.md                               full reference (API, security, troubleshooting)
+  firmware/morag_controller/
+      morag_controller.ino                ESP32 code
+      portal_html.h                       captive portal web page (must stay next to the .ino)
+  app/                                    Flutter Android app
+      pubspec.yaml, analysis_options.yaml
+      lib/main.dart, api.dart, models.dart, storage.dart, light_controller.dart
+      lib/screens/connect_screen.dart     device AP, Wi-Fi setup, IP address, login, profile
+      lib/screens/home_screen.dart        color wheel, speed, brightness, effects, brands
+      lib/screens/brand_editor.dart       add/edit brand (logo, name, colors, effect)
+      android/app/src/main/AndroidManifest.xml
+      test/widget_test.dart
+  .github/workflows/build-apk.yml         optional: build the APK on GitHub instead of your PC
+
+
+DEFAULT CREDENTIALS
+-------------------
+  Device AP (ESP32 Wi-Fi) .... MORAG-Light / morag2026
+  App and portal login ....... admin / morag1234
+  Site Wi-Fi ................. your router's SSID and password (entered in the app or portal)
+
+  Change them in the app or portal: avatar (top left) > Device profile.
+  Forgot them? While the ESP32 is running, hold its BOOT button 5 seconds.
+  The strip flashes white and everything returns to the defaults above.
+  (Do NOT hold BOOT while plugging in power: that enters upload mode.)
+
+
+A. HARDWARE AND WIRING
+----------------------
+  Parts: ESP32 38-pin dev board (MLE05195), 12V WS2815 strip 5 m 60 LEDs/m (MLE03783),
+         12V 10A power supply, 12V-to-5V buck converter, 74AHCT125 level shifter,
+         330 ohm resistor, 1000 uF 25V capacitor, 10A inline fuse.
+
+  ESP32 GPIO 16 ...... 74AHCT125 (powered at 5V) > 330 ohm > strip DI (data)
+  Strip BI ........... GND (backup data line)
+  Strip +12V / GND ... 12V supply (feed both ends of the 5 m strip)
+  1000 uF capacitor .. across +12V and GND at the strip input
+  ESP32 VIN and GND .. 5V output of the buck converter
+  All grounds ........ tied together (supply, ESP32, strip)
+
+
+B. FLASH THE ESP32
+------------------
+  1. Install Arduino IDE 2.x.
+  2. Tools > Board > Boards Manager: install "esp32 by Espressif Systems".
+  3. Tools > Manage Libraries: install "FastLED" (3.9 or later).
+  4. Copy the folder firmware/morag_controller to your computer.
+     The folder must contain BOTH morag_controller.ino and portal_html.h.
+  5. Open morag_controller.ino in Arduino IDE.
+  6. Tools > Board: "ESP32 Dev Module". Tools > Port: your ESP32's COM port.
+  7. Click Upload. If it stays on "Connecting...", hold BOOT until upload starts.
+  8. Tools > Serial Monitor at 115200 baud. You should see:
+        Wi-Fi ready: MORAG-Light at 192.168.4.1
+  9. Test without the app: type  COLOR,#FF0000  in Serial Monitor and press Enter.
+     The strip turns red.
+
+  Settings at the top of the .ino: DATA_PIN (16), NUM_LEDS (300), PSU_MILLIAMPS (8000).
+  Red and green swapped? Change GRB to RGB in the FastLED.addLeds line.
+
+
+C. BUILD THE ANDROID APP (APK)
+------------------------------
+  Needs: Flutter 3.22+ and Android Studio. Check with:  flutter doctor
+  (Android toolchain must show a green check.)
+
+  1. Copy the "app" folder to your PC, for example C:\MoragApp\app
+  2. Open PowerShell in that folder and run:
+
+       flutter create --platforms=android --org com.morag --project-name morag_lighting .
+       flutter pub get
+       flutter build apk --release
+
+     "flutter create ." only adds missing Android files; it keeps lib\, test\ and the
+     AndroidManifest.xml from this zip. If it replaced the manifest, copy ours back.
+
+  3. If the build fails with "NDK ... did not install" or "NDK not found":
+       a. See which NDK you have:
+            Get-ChildItem "$env:LOCALAPPDATA\Android\sdk\ndk" | Select-Object Name
+       b. Open app\android\app\build.gradle.kts and change
+            ndkVersion = flutter.ndkVersion
+          to your version, for example
+            ndkVersion = "30.0.16248370"
+       c. Run:  flutter clean   then   flutter pub get   then   flutter build apk --release
+     (Or install the NDK in Android Studio: SDK Manager > SDK Tools > NDK (Side by side).)
+
+  4. The APK is at:
+       app\build\app\outputs\flutter-apk\app-release.apk
+     Copy it to the phone, open it, and allow "install unknown apps" when asked.
+
+  No Flutter on your PC? Put this whole zip in a GitHub repo (keep the .github folder),
+  open the Actions tab > "Build APK" > Run workflow, then download the APK from Artifacts.
+
+
+D. USE IT
+---------
+  WITH THE APP
+  1. Power the ESP32. Open the MORAG Lighting app.
+  2. Connect to device AP: tap "Connect device AP" and confirm, or join MORAG-Light in
+     Android Settings. When Android says "no internet", choose "Stay connected".
+     (Android may also show "Sign in to network": that is the portal, you can ignore it.)
+  3. Connect device to Wi-Fi: enter the site SSID and password, tap "Connect to Wi-Fi".
+     Wait for "Connected to <SSID>". The IP address fills in.
+     The ESP32 only joins 2.4 GHz Wi-Fi.
+  4. Tap "Switch phone to <SSID>" so the phone goes back to the site Wi-Fi.
+  5. User login: admin / morag1234, tap Sign in.
+     (No site Wi-Fi? Skip 3 and 4 and sign in while on MORAG-Light.)
+  6. Home: color wheel, speed, brightness, effects, brands.
+     Tap a brand to apply it, long-press to edit, "add brand" to create one.
+
+  WITHOUT THE APP (CAPTIVE PORTAL, any phone or laptop)
+  1. Join the Wi-Fi MORAG-Light (password morag2026).
+  2. The MORAG page opens by itself. If not, open a browser and go to http://192.168.4.1
+  3. Same steps as the app: Scan > pick your Wi-Fi > password > Connect to Wi-Fi,
+     then log in (admin / morag1234).
+  4. On the site Wi-Fi you can also open the page at the device IP, e.g. http://192.168.1.57
+
+  NOTE: brands made in the app are saved on the phone (with logos).
+        Brands made in the portal are saved on the ESP32 (no logos).
+        The two lists are separate in this prototype.
+
+
+QUICK TROUBLESHOOTING
+---------------------
+  App says "Device not found" ...... phone and ESP32 must be on the same Wi-Fi, or the
+                                      phone on MORAG-Light. Check the IP address.
+  Wi-Fi setup says "not found" ...... 2.4 GHz only; check the SSID spelling and range.
+  Wi-Fi setup says "failed" ......... wrong password, or a network with a login page /
+                                      enterprise login (not supported).
+  MORAG-Light drops after Wi-Fi setup  normal for a few seconds while the ESP32 joins.
+  Commands time out on MORAG-Light .. Android switched to mobile data: rejoin, choose
+                                      "Stay connected", or turn mobile data off.
+  IP changed after router restart ... reserve the ESP32's IP in the router (DHCP reservation).
+  First LEDs flicker ................ strip BI not on GND, or level shifter missing.
+  Colors fade at the far end ........ feed 12V into the far end of the strip too.
+  Build error in Dart code .......... send the error text to the developer.
