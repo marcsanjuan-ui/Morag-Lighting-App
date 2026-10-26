@@ -1,0 +1,27 @@
+
+name: morag_lighting
+description: MORAG Mobile Lighting Application - prototype. Controls a WS2815 strip on an ESP32 over Wi-Fi (device AP or site Wi-Fi).
+publish_to: "none"
+version: 0.1.0+1
+ 
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+ 
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0                        # talks to the controller at 192.168.4.1
+  shared_preferences: ^2.2.0          # stores brand presets and settings on the phone
+  flutter_colorpicker: ^1.1.0         # color wheel
+  wifi_iot: ">=0.3.19 <0.5.0"         # joins the device AP and keeps traffic on it
+  image_picker: ^1.1.2                # brand logo from the gallery
+  path_provider: ^2.1.4               # where logos are kept
+ 
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+ 
+flutter:
+  uses-material-design: true
+ 
