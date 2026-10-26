@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>WS2815 Preset Gallery</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a controller bench — the selected preset on a big strip up top, a control rail, then all 50 presets grouped by the firmware's own sections, each with a live 300-LED strip. Committed dark: LEDs read on a dark substrate. */
+:root{
+  --bg:#0D0F12; --panel:#15191E; --panel-2:#1B2026; --line:#272E36; --fg:#E8EBEF; --mute:#8D96A1; --dim:#5C6570;
+  --accent:#FFB547; --accent-ink:#1A1206; --warn:#FF6B5B; --static:#7FB2FF; --random:#C49BFF; --anim:#5FD3A6;
+  --display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px}
+h1,h2,h3{font-family:var(--display);font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:clamp(24px,4vw,32px);letter-spacing:.2px}
+.sub{color:var(--mute);margin:6px 0 0;max-width:68ch}
+code,.mono{font-family:var(--mono);font-size:13px}
+
+/* hero */
+.hero{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:14px}
+.hero-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px}
+.hero-id{font-family:var(--mono);color:var(--accent);font-size:14px}
+.hero-name{font-size:22px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto}
+.api{font-family:var(--mono);font-size:12.5px;color:var(--mute);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer}
+.api:hover{color:var(--fg)}
+.api:focus-visible,.row:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.desc{color:var(--mute);margin:0;max-width:72ch}
+.big{width:100%;height:44px;display:block;border-radius:6px;background:#06080A}
+.zoom-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.4px;text-transform:uppercase}
+.zoom{width:100%;height:auto;aspect-ratio:60/3.2;display:block;max-width:100%}
+pre.code{margin:0;background:#0A0C0F;border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;font:12.5px/1.55 var(--mono);color:#CBD3DC}
+pre.code .k{color:#FFB547}.pre.code .c{color:var(--dim)}
+.cm{color:var(--dim)}.kw{color:#FFB547}.num{color:#7FB2FF}.fn{color:#5FD3A6}
+
+/* controls */
+.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:18px calc(-1 * max(16px,env(safe-area-inset-left,0px))) 0;padding:10px max(16px,env(safe-area-inset-left,0px))}
+.rail-in{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.ctl{display:flex;align-items:center;gap:8px;min-width:0}
+.ctl label{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.ctl output{font-family:var(--mono);font-size:13px;min-width:3.2ch;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:130px;accent-color:var(--accent)}
+.tick{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12.5px var(--body);border:1px solid var(--line);background:transparent;color:var(--mute);border-radius:999px;padding:5px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn{font:600 13px var(--body);border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);cursor:pointer}
+.toggle input{accent-color:var(--warn);width:16px;height:16px}
+.spacer{flex:1}
+
+/* list */
+section.group{margin-top:28px}
+.group-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.group-head h2{font-size:17px}
+.group-head span{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.rows{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:44px minmax(0,200px) minmax(0,1fr) 84px;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%}
+.row:hover{border-color:#3A434D}
+.row[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.num-id{font-family:var(--mono);font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums}
+.row[aria-current="true"] .num-id{color:var(--accent)}
+.nm{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip{width:100%;height:18px;display:block;border-radius:4px;background:#06080A;min-width:0}
+.kind{justify-self:end;font:600 11px var(--body);letter-spacing:.5px;text-transform:uppercase;border-radius:999px;padding:3px 8px;border:1px solid currentColor;white-space:nowrap}
+.k-anim{color:var(--anim)}.k-random{color:var(--random)}.k-static{color:var(--static)}.k-flash{color:var(--warn)}
+.row[hidden]{display:none!important}
+.notes{margin-top:36px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.notes h2{font-size:16px;margin-bottom:8px}
+.notes ul{margin:0;padding-left:18px;color:var(--mute);display:grid;gap:6px;max-width:80ch}
+.notes b{color:var(--fg);font-weight:600}
+.flash-note{font-size:12.5px;color:var(--warn)}
+
+@media (max-width:640px){
+  .row{grid-template-columns:34px minmax(0,1fr) auto;grid-template-areas:"id nm kind" "strip strip strip";row-gap:8px}
+  .row .num-id{grid-area:id}.row .nm{grid-area:nm}.row .kind{grid-area:kind}.row .strip{grid-area:strip}
+  input[type=range]{width:100px}
+  .hero-meta{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>WS2815 Preset Gallery</h1>
+    <p class="sub">All 50 presets from your <code>updateLedAnimation()</code>, running live on a simulated 300-LED strip. The animation code is ported line for line, so timing, speed and brightness behave like the ESP32. Tap any preset to inspect it.</p>
+  </header>
+
+  <div class="hero" aria-live="polite">
+    <div class="hero-head">
+      <span class="hero-id" id="hId">#01</span>
+      <h2 class="hero-name" id="hName">Rainbow Wave</h2>
+      <span class="kind" id="hKind">Animated</span>
+      <div class="hero-meta">
+        <button class="api" id="hApi" title="Copy the API call">POST /api/preset?id=1</button>
+      </div>
+    </div>
+    <p class="desc" id="hDesc"></p>
+    <div>
+      <div class="zoom-label"><span>Full strip · 300 LEDs</span><span>5 m</span></div>
+      <canvas class="big" id="big"></canvas>
+    </div>
+    <div>
+      <div class="zoom-label"><span>Close-up · LEDs 1–60 (first metre)</span><span>16.7 mm pitch</span></div>
+      <canvas class="zoom" id="zoom"></canvas>
+    </div>
+    <pre class="code" id="hCode"></pre>
+  </div>
+
+  <div class="rail">
+    <div class="rail-in">
+      <div class="ctl"><label for="speed">Speed</label><input type="range" id="speed" min="0" max="255" value="128"><output id="speedV">128</output></div>
+      <div class="ctl"><label for="bright">Brightness</label><input type="range" id="bright" min="0" max="255" value="200"><output id="brightV">200</output></div>
+      <span class="tick" id="tick">tick 50 ms</span>
+      <div class="spacer"></div>
+      <label class="toggle" title="Strobe-type presets flash many times per second"><input type="checkbox" id="flash"> Full-speed flashing</label>
+      <button class="btn" id="pause" aria-pressed="false">Pause</button>
+    </div>
+    <div class="rail-in" style="margin-top:8px">
+      <div class="chips" role="group" aria-label="Filter presets">
+        <button class="chip" data-f="all" aria-pressed="true">All 50</button>
+        <button class="chip" data-f="anim" aria-pressed="false">Animated</button>
+        <button class="chip" data-f="random" aria-pressed="false">Random</button>
+        <button class="chip" data-f="flash" aria-pressed="false">Flashing</button>
+        <button class="chip" data-f="static" aria-pressed="false">Static</button>
+      </div>
+      <span class="flash-note" id="flashNote">Flashing presets are slowed to 2 flashes a second. Tick the box to see them at full speed.</span>
+    </div>
+  </div>
+
+  <div id="groups"></div>
+
+  <div class="notes">
+    <h2>What the simulation shows about the firmware</h2>
+    <ul>
+      <li><b>Speed only changes the tick.</b> Speed sets the delay between frames, <code>map(255 − speed, 0, 255, 2, 100)</code>, from 100 ms down to 2 ms. A 300-LED frame takes about 9 ms to send, so above speed ≈ 205 the strip can't go any faster.</li>
+      <li><b>Static presets ignore speed:</b> 22, 23, 24, 35, 36, 37, 43, 44, 45 and 50 are a single fill color.</li>
+      <li><b>Breathing Red and Heartbeat are slow.</b> They follow <code>hue</code>, which moves 1 step per tick, so a full breath takes 256 ticks: about 13 s at the default speed.</li>
+      <li><b>Color Wipe (7) never clears.</b> It paints over whatever was on the strip, including the previous preset's colors.</li>
+      <li><b>Fade effects keep the old frame.</b> Presets that use <code>fadeToBlackBy</code> (4, 6, 8, 19, 20, 29, 30, 38, 39, 42, 49) start on top of the last preset and fade it out.</li>
+      <li><b>Possible overflow in Beacon Light (30).</b> <code>(sin8(hue) * NUM_LEDS) / 255</code> reaches 300 when <code>sin8</code> returns 255. That writes <code>leds[300]</code>, one past the end of the array. Use <code>NUM_LEDS - 1</code> or <code>/ 256</code>.</li>
+      <li><b>Color order.</b> The sketch uses <code>COLOR_ORDER RGB</code>, but its comment says WS2815 is usually GRB. If red and green look swapped on the real strip, change it to <code>GRB</code>. The previews show the intended colors.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var N=300;
+var CASES={"1": "case 1: fill_rainbow(leds, NUM_LEDS, hue, 7); break; // Rainbow Wave", "2": "case 2: { // Breathing Red\n  uint8_t breath = fl::dim8_video(quadwave8(hue));\n  fill_solid(leds, NUM_LEDS, CRGB(breath, 0, 0));\n  break;\n}", "3": "case 3: { // Fire Effect\n  for(int i=0; i<NUM_LEDS; i++) {\n    uint8_t noise = inoise8(i*20, millis()/5);\n    leds[i] = ColorFromPalette(HeatColors_p, noise);\n  }\n  break;\n}", "4": "case 4: { // Matrix Rain\n  fadeToBlackBy(leds, NUM_LEDS, 30);\n  if (random8() < 60) leds[random16(NUM_LEDS)] = CRGB::Green;\n  break;\n}", "5": "case 5: { // Strobe White\n  if (animIndex % 2 == 0) fill_solid(leds, NUM_LEDS, CRGB::White);\n  else fill_solid(leds, NUM_LEDS, CRGB::Black);\n  break;\n}", "6": "case 6: { // Twinkle Star\n  fadeToBlackBy(leds, NUM_LEDS, 10);\n  if (random8() < 40) leds[random16(NUM_LEDS)] = CRGB::Gold;\n  break;\n}", "7": "case 7: { // Color Wipe\n  static uint16_t wipePos = 0;\n  leds[wipePos % NUM_LEDS] = CHSV(hue, 255, 255);\n  wipePos++;\n  break;\n}", "8": "case 8: { // Comet Trail\n  fadeToBlackBy(leds, NUM_LEDS, 40);\n  int pos = (animIndex) % NUM_LEDS;\n  leds[pos] = CRGB::Cyan;\n  break;\n}", "9": "case 9: { // Aurora Borealis\n  for(int i=0; i<NUM_LEDS; i++) {\n    uint8_t n = inoise8(i*15, millis()/10);\n    leds[i] = (n > 128) ? CRGB(0, n, n/2) : CRGB(n/2, 0, n);\n  }\n  break;\n}", "10": "case 10: { // Candle Light\n  for(int i=0; i<NUM_LEDS; i++) {\n    uint8_t flicker = random8(180, 255);\n    leds[i] = CRGB(flicker, flicker/3, 0);\n  }\n  break;\n}", "11": "case 11: { // Police Siren\n  int mid = NUM_LEDS/2;\n  if ((animIndex / 10) % 2 == 0) {\n    fill_solid(leds, mid, CRGB::Red);\n    fill_solid(leds + mid, NUM_LEDS - mid, CRGB::Black);\n  } else {\n    fill_solid(leds, mid, CRGB::Black);\n    fill_solid(leds + mid, NUM_LEDS - mid, CRGB::Blue);\n  }\n  break;\n}", "12": "case 12: { // Lava Lamp\n  for(int i=0; i<NUM_LEDS; i++) leds[i] = ColorFromPalette(LavaColors_p, hue + (i*4));\n  break;\n}", "13": "case 13: { // Ocean Wave\n  for(int i=0; i<NUM_LEDS; i++) leds[i] = ColorFromPalette(OceanColors_p, hue + (i*3));\n  break;\n}", "14": "case 14: fill_solid(leds, NUM_LEDS, CHSV(hue, 255, 255)); break; // Neon Pulse", "15": "case 15: { // Sunset Breeze\n  for(int i=0; i<NUM_LEDS; i++) {\n    uint8_t mix = quadwave8(hue + i*5);\n    leds[i] = CRGB(255, mix/2, 20);\n  }\n  break;\n}", "16": "case 16: fill_solid(leds, NUM_LEDS, (animIndex%4 < 2) ? CRGB(CRGB::Magenta) : CRGB(CRGB::Cyan)); break; // Cyberpunk Glow", "17": "case 17: { // Christmas Glow\n  for(int i=0; i<NUM_LEDS; i++) leds[i] = ((i + animIndex/5) % 2 == 0) ? CRGB(CRGB::Red) : CRGB(CRGB::Green);\n  break;\n}", "18": "case 18: { // Halloween Pulse\n  fill_solid(leds, NUM_LEDS, (animIndex % 10 < 5) ? CRGB(CRGB::Orange) : CRGB(CRGB::Purple));\n  break;\n}", "19": "case 19: { // Fireworks Display\n  fadeToBlackBy(leds, NUM_LEDS, 50);\n  if (random8() < 20) leds[random16(NUM_LEDS)] = CHSV(random8(), 255, 255);\n  break;\n}", "20": "case 20: { // Electric Storm\n  fadeToBlackBy(leds, NUM_LEDS, 80);\n  if (random8() < 10) fill_solid(leds, NUM_LEDS, CRGB::White);\n  break;\n}", "21": "case 21: for(int i=0; i<NUM_LEDS; i++) leds[i] = ColorFromPalette(ForestColors_p, hue + i*2); break; // Forest Canopy", "22": "case 22: fill_solid(leds, NUM_LEDS, CRGB(255, 100, 0)); break; // Desert Heat", "23": "case 23: fill_solid(leds, NUM_LEDS, CRGB(100, 200, 255)); break; // Ice World", "24": "case 24: fill_solid(leds, NUM_LEDS, CRGB(255, 180, 200)); break; // Pastel Dream", "25": "case 25: { // Retro Arcade\n  for(int i=0; i<NUM_LEDS; i++) leds[i] = CHSV((i*30) + (hue*2), 255, 255);\n  break;\n}", "26": "case 26: { // Heartbeat\n  uint8_t beat = quadwave8(hue*2);\n  fill_solid(leds, NUM_LEDS, CRGB(beat, 0, 20));\n  break;\n}", "27": "case 27: { // Glitch Pulse\n  if (random8() < 30) fill_solid(leds, NUM_LEDS, CHSV(random8(), 255, 255));\n  break;\n}", "28": "case 28: { // Ripple Effect\n  for(int i=0; i<NUM_LEDS; i++) {\n    uint8_t wave = sin8(i*10 + hue*4);\n    leds[i] = CRGB(0, wave, wave);\n  }\n  break;\n}", "29": "case 29: { // Snake Motion\n  fadeToBlackBy(leds, NUM_LEDS, 30);\n  int head = (animIndex) % NUM_LEDS;\n  leds[head] = CRGB::Lime;\n  break;\n}", "30": "case 30: { // Beacon Light\n  fadeToBlackBy(leds, NUM_LEDS, 20);\n  int pos = (sin8(hue) * NUM_LEDS) / 255;\n  leds[pos] = CRGB::Yellow;\n  break;\n}", "31": "case 31: { // Marquee Chase\n  for(int i=0; i<NUM_LEDS; i++) leds[i] = ((i + animIndex/3) % 3 == 0) ? CRGB(CRGB::Gold) : CRGB(CRGB::Black);\n  break;\n}", "32": "case 32: { // Gradient Bounce\n  for(int i=0; i<NUM_LEDS; i++) leds[i] = CHSV(sin8(hue + i*2), 255, 255);\n  break;\n}", "33": "case 33: { // Plasma Wave\n  for(int i=0; i<NUM_LEDS; i++) {\n    uint8_t p = sin8(i*8 + hue) + cos8(i*4 - hue);\n    leds[i] = CHSV(p, 255, 255);\n  }\n  break;\n}", "34": "case 34: { // Disco Flash\n  fill_solid(leds, NUM_LEDS, CHSV(random8(), 255, 255));\n  break;\n}", "35": "case 35: fill_solid(leds, NUM_LEDS, CRGB(255, 60, 0)); break; // Sunset Flare", "36": "case 36: fill_solid(leds, NUM_LEDS, CRGB(255, 240, 200)); break; // Moonlight White", "37": "case 37: fill_solid(leds, NUM_LEDS, CRGB(255, 80, 0)); break;   // Solar Flare", "38": "case 38: { // Cosmic Dust\n  fadeToBlackBy(leds, NUM_LEDS, 15);\n  if (random8() < 50) leds[random16(NUM_LEDS)] = CRGB::MediumPurple;\n  break;\n}", "39": "case 39: { // Bubble Pop\n  fadeToBlackBy(leds, NUM_LEDS, 10);\n  if (random8() < 25) leds[random16(NUM_LEDS)] = CRGB::DeepSkyBlue;\n  break;\n}", "40": "case 40: for(int i=0; i<NUM_LEDS; i++) leds[i] = CHSV(120 + sin8(hue + i*3)/4, 255, 255); break; // Northern Lights", "41": "case 41: for(int i=0; i<NUM_LEDS; i++) leds[i] = CHSV((i*5 + hue) % 255, 255, 255); break;     // Hypnotic Ring", "42": "case 42: { // Meteor Shower\n  fadeToBlackBy(leds, NUM_LEDS, 60);\n  int m = (animIndex*2) % NUM_LEDS;\n  leds[m] = CRGB::White;\n  break;\n}", "43": "case 43: fill_solid(leds, NUM_LEDS, CRGB(0, 200, 80)); break;   // Emerald Dream", "44": "case 44: fill_solid(leds, NUM_LEDS, CRGB(255, 140, 0)); break;  // Golden Hour", "45": "case 45: fill_solid(leds, NUM_LEDS, CRGB(200, 80, 10)); break;  // Soft Candle", "46": "case 46: fill_rainbow(leds, NUM_LEDS, hue*2, 10); break;        // Rainbow Chase", "47": "case 47: fill_solid(leds, NUM_LEDS, (animIndex % 2 == 0) ? CRGB(CHSV(hue, 255, 255)) : CRGB(CRGB::Black)); break; // Dynamic Strobe", "48": "case 48: { // Candy Cane\n  for(int i=0; i<NUM_LEDS; i++) leds[i] = ((i + animIndex/4) % 4 < 2) ? CRGB(CRGB::Red) : CRGB(CRGB::White);\n  break;\n}", "49": "case 49: { // Firefly Night\n  fadeToBlackBy(leds, NUM_LEDS, 8);\n  if (random8() < 15) leds[random16(NUM_LEDS)] = CRGB(150, 255, 0);\n  break;\n}", "50": "case 50: fill_solid(leds, NUM_LEDS, CRGB(30, 180, 120)); break; // Zen Garden"};
+
+// ---------- FastLED helpers (ported) ----------
+function scale8(i,s){return (i*(1+s))>>8}
+function scale8v(i,s){return ((i*s)>>8)+((i&&s)?1:0)}
+function random8(a,b){if(a===undefined)return (Math.random()*256)|0;if(b===undefined){b=a;a=0}return a+((Math.random()*(b-a))|0)}
+function random16(n){return (Math.random()*n)|0}
+function sin8(x){x&=255;var v=Math.round(128+127.5*Math.sin(x/256*Math.PI*2));return v>255?255:v<0?0:v}
+function cos8(x){return sin8(x+64)}
+function triwave8(i){i&=255;if(i&128)i=255-i;return (i<<1)&255}
+function ease8InOutQuad(i){var j=i;if(j&128)j=255-j;var jj=scale8(j,j),jj2=(jj<<1)&255;if(i&128)jj2=255-jj2;return jj2}
+function quadwave8(x){return ease8InOutQuad(triwave8(x))}
+function dim8_video(x){return scale8v(x,x)}
+function hsv(h,s,v){ // hsv2rgb_rainbow
+  h&=255;var off8=(h&31)<<3,third=scale8(off8,85),r,g,b,tt;
+  if(!(h&128)){ if(!(h&64)){ if(!(h&32)){r=255-third;g=third;b=0}else{r=171;g=85+third;b=0} }
+               else{ if(!(h&32)){tt=scale8(off8,170);r=171-tt;g=170+third;b=0}else{r=0;g=255-third;b=third} } }
+  else{ if(!(h&64)){ if(!(h&32)){r=0;tt=scale8(off8,170);g=171-tt;b=85+tt}else{r=third;g=0;b=255-third} }
+        else{ if(!(h&32)){r=85+third;g=0;b=171-third}else{r=170+third;g=0;b=85-third} } }
+  if(s!==255){ if(s===0){r=g=b=255}else{var d=255-s;d=scale8v(d,d);var ss=255-d;r=scale8(r,ss)+d;g=scale8(g,ss)+d;b=scale8(b,ss)+d} }
+  if(v!==255){ v=scale8v(v,v); if(v===0){r=g=b=0}else{r=scale8(r,v);g=scale8(g,v);b=scale8(b,v)} }
+  return [r,g,b];
+}
+function hx(c){return [(c>>16)&255,(c>>8)&255,c&255]}
+var C={Red:0xFF0000,Black:0,White:0xFFFFFF,Green:0x008000,Lime:0x00FF00,Gold:0xFFD700,Cyan:0x00FFFF,Blue:0x0000FF,Magenta:0xFF00FF,
+  Orange:0xFFA500,Purple:0x800080,Yellow:0xFFFF00,MediumPurple:0x9370DB,DeepSkyBlue:0x00BFFF,Maroon:0x800000,DarkRed:0x8B0000,
+  MidnightBlue:0x191970,DarkBlue:0x00008B,Navy:0x000080,MediumBlue:0x0000CD,SeaGreen:0x2E8B57,Teal:0x008080,CadetBlue:0x5F9EA0,
+  DarkCyan:0x008B8B,CornflowerBlue:0x6495ED,Aquamarine:0x7FFFD4,Aqua:0x00FFFF,LightSkyBlue:0x87CEFA,DarkGreen:0x006400,
+  DarkOliveGreen:0x556B2F,ForestGreen:0x228B22,OliveDrab:0x6B8E23,MediumAquamarine:0x66CDAA,LimeGreen:0x32CD32,YellowGreen:0x9ACD32,
+  LightGreen:0x90EE90,LawnGreen:0x7CFC00};
+function pal(names){return names.map(function(n){return typeof n==="number"?hx(n):hx(C[n])})}
+var HeatColors_p=pal([0x000000,0x330000,0x660000,0x990000,0xCC0000,0xFF0000,0xFF3300,0xFF6600,0xFF9900,0xFFCC00,0xFFFF00,0xFFFF33,0xFFFF66,0xFFFF99,0xFFFFCC,0xFFFFFF]);
+var LavaColors_p=pal(["Black","Maroon","Black","Maroon","DarkRed","DarkRed","Maroon","DarkRed","DarkRed","DarkRed","Red","Orange","White","Orange","Red","DarkRed"]);
+var OceanColors_p=pal(["MidnightBlue","DarkBlue","MidnightBlue","Navy","DarkBlue","MediumBlue","SeaGreen","Teal","CadetBlue","Blue","DarkCyan","CornflowerBlue","Aquamarine","SeaGreen","Aqua","LightSkyBlue"]);
+var ForestColors_p=pal(["DarkGreen","DarkGreen","DarkOliveGreen","DarkGreen","Green","ForestGreen","OliveDrab","Green","SeaGreen","MediumAquamarine","LimeGreen","YellowGreen","LightGreen","LawnGreen","MediumAquamarine","ForestGreen"]);
+function fromPal(p,idx){idx&=255;var hi=idx>>4,lo=idx&15,a=p[hi];if(!lo)return a.slice();var b=p[(hi+1)&15],f2=lo<<4,f1=255-f2;
+  return [scale8(a[0],f1)+scale8(b[0],f2),scale8(a[1],f1)+scale8(b[1],f2),scale8(a[2],f1)+scale8(b[2],f2)]}
+
+// Perlin noise, scaled like inoise8 (8.8 fixed-point inputs, ~0..255 out)
+var P=new Uint8Array(512);(function(){var p=[],i;for(i=0;i<256;i++)p[i]=i;var s=1337;for(i=255;i>0;i--){s=(s*16807)%2147483647;var j=s%(i+1),t=p[i];p[i]=p[j];p[j]=t}for(i=0;i<512;i++)P[i]=p[i&255]})();
+function fade(t){return t*t*t*(t*(t*6-15)+10)}
+function grad(h,x,y){switch(h&3){case 0:return x+y;case 1:return -x+y;case 2:return x-y;default:return -x-y}}
+function inoise8(x,y){x/=256;y/=256;var X=Math.floor(x)&255,Y=Math.floor(y)&255;x-=Math.floor(x);y-=Math.floor(y);var u=fade(x),v=fade(y);
+  var aa=P[P[X]+Y],ab=P[P[X]+Y+1],ba=P[P[X+1]+Y],bb=P[P[X+1]+Y+1];
+  var l1=grad(aa,x,y)+u*(grad(ba,x-1,y)-grad(aa,x,y)),l2=grad(ab,x,y-1)+u*(grad(bb,x-1,y-1)-grad(ab,x,y-1)),n=l1+v*(l2-l1);
+  var o=Math.round(128+n*150);return o<0?0:o>255?255:o}
+
+// ---------- one simulated controller per preset ----------
+function Sim(id){this.id=id;this.L=new Uint8Array(N*3);this.hue=0;this.anim=0;this.wipe=0;this.last=0}
+Sim.prototype.set=function(i,c){if(i<0||i>=N)return;var k=i*3;this.L[k]=c[0];this.L[k+1]=c[1];this.L[k+2]=c[2]};
+Sim.prototype.fill=function(c,from,to){from=from||0;to=to===undefined?N:to;for(var i=from;i<to;i++)this.set(i,c)};
+Sim.prototype.fadeBy=function(f){var s=255-f;for(var k=0;k<this.L.length;k++)this.L[k]=scale8(this.L[k],s)};
+Sim.prototype.rainbow=function(h0,d){for(var i=0;i<N;i++)this.set(i,hsv((h0+i*d)&255,240,255))};
+Sim.prototype.step=function(ms){
+  this.hue=(this.hue+1)&255;this.anim=(this.anim+1)&65535;
+  var h=this.hue,a=this.anim,i,n,self=this;
+  switch(this.id){
+    case 1:this.rainbow(h,7);break;
+    case 2:this.fill([dim8_video(quadwave8(h)),0,0]);break;
+    case 3:for(i=0;i<N;i++)this.set(i,fromPal(HeatColors_p,inoise8((i*20)&65535,(ms/5)&65535)));break;
+    case 4:this.fadeBy(30);if(random8()<60)this.set(random16(N),hx(C.Green));break;
+    case 5:this.fill(a%2===0?[255,255,255]:[0,0,0]);break;
+    case 6:this.fadeBy(10);if(random8()<40)this.set(random16(N),hx(C.Gold));break;
+    case 7:this.set(this.wipe%N,hsv(h,255,255));this.wipe=(this.wipe+1)&65535;break;
+    case 8:this.fadeBy(40);this.set(a%N,hx(C.Cyan));break;
+    case 9:for(i=0;i<N;i++){n=inoise8((i*15)&65535,(ms/10)&65535);this.set(i,n>128?[0,n,n>>1]:[n>>1,0,n])}break;
+    case 10:for(i=0;i<N;i++){n=random8(180,255);this.set(i,[n,(n/3)|0,0])}break;
+    case 11:var mid=N>>1;if(((a/10)|0)%2===0){this.fill(hx(C.Red),0,mid);this.fill([0,0,0],mid,N)}else{this.fill([0,0,0],0,mid);this.fill(hx(C.Blue),mid,N)}break;
+    case 12:for(i=0;i<N;i++)this.set(i,fromPal(LavaColors_p,h+i*4));break;
+    case 13:for(i=0;i<N;i++)this.set(i,fromPal(OceanColors_p,h+i*3));break;
+    case 14:this.fill(hsv(h,255,255));break;
+    case 15:for(i=0;i<N;i++){n=quadwave8((h+i*5)&255);this.set(i,[255,n>>1,20])}break;
+    case 16:this.fill(a%4<2?hx(C.Magenta):hx(C.Cyan));break;
+    case 17:for(i=0;i<N;i++)this.set(i,((i+((a/5)|0))%2===0)?hx(C.Red):hx(C.Green));break;
+    case 18:this.fill(a%10<5?hx(C.Orange):hx(C.Purple));break;
+    case 19:this.fadeBy(50);if(random8()<20)this.set(random16(N),hsv(random8(),255,255));break;
+    case 20:this.fadeBy(80);if(random8()<10)this.fill([255,255,255]);break;
+    case 21:for(i=0;i<N;i++)this.set(i,fromPal(ForestColors_p,h+i*2));break;
+    case 22:this.fill([255,100,0]);break;
+    case 23:this.fill([100,200,255]);break;
+    case 24:this.fill([255,180,200]);break;
+    case 25:for(i=0;i<N;i++)this.set(i,hsv((i*30+h*2)&255,255,255));break;
+    case 26:this.fill([quadwave8((h*2)&255),0,20]);break;
+    case 27:if(random8()<30)this.fill(hsv(random8(),255,255));break;
+    case 28:for(i=0;i<N;i++){n=sin8(i*10+h*4);this.set(i,[0,n,n])}break;
+    case 29:this.fadeBy(30);this.set(a%N,hx(C.Lime));break;
+    case 30:this.fadeBy(20);this.set(((sin8(h)*N)/255)|0,hx(C.Yellow));break; // index can reach 300 (one past the end); ignored here
+    case 31:for(i=0;i<N;i++)this.set(i,((i+((a/3)|0))%3===0)?hx(C.Gold):[0,0,0]);break;
+    case 32:for(i=0;i<N;i++)this.set(i,hsv(sin8(h+i*2),255,255));break;
+    case 33:for(i=0;i<N;i++){n=(sin8(i*8+h)+cos8(i*4-h))&255;this.set(i,hsv(n,255,255))}break;
+    case 34:this.fill(hsv(random8(),255,255));break;
+    case 35:this.fill([255,60,0]);break;
+    case 36:this.fill([255,240,200]);break;
+    case 37:this.fill([255,80,0]);break;
+    case 38:this.fadeBy(15);if(random8()<50)this.set(random16(N),hx(C.MediumPurple));break;
+    case 39:this.fadeBy(10);if(random8()<25)this.set(random16(N),hx(C.DeepSkyBlue));break;
+    case 40:for(i=0;i<N;i++)this.set(i,hsv((120+(sin8(h+i*3)>>2))&255,255,255));break;
+    case 41:for(i=0;i<N;i++)this.set(i,hsv((i*5+h)%255,255,255));break;
+    case 42:this.fadeBy(60);this.set((a*2)%N,[255,255,255]);break;
+    case 43:this.fill([0,200,80]);break;
+    case 44:this.fill([255,140,0]);break;
+    case 45:this.fill([200,80,10]);break;
+    case 46:this.rainbow((h*2)&255,10);break;
+    case 47:this.fill(a%2===0?hsv(h,255,255):[0,0,0]);break;
+    case 48:for(i=0;i<N;i++)this.set(i,((i+((a/4)|0))%4<2)?hx(C.Red):[255,255,255]);break;
+    case 49:this.fadeBy(8);if(random8()<15)this.set(random16(N),[150,255,0]);break;
+    case 50:this.fill([30,180,120]);break;
+  }
+};
+
+// ---------- preset catalogue ----------
+var GROUPS=[["Dynamic presets",1,10],["Party and strobe",11,20],["Relaxing and nature",21,35],["Static and custom patterns",36,50]];
+var KIND_LABEL={anim:"Animated",random:"Random",flash:"Flashing",static:"Static"};
+var PRESETS=[
+ [1,"Rainbow Wave","anim","A rainbow that scrolls along the strip. Hue steps 7 per LED, so one full rainbow spans about 37 LEDs."],
+ [2,"Breathing Red","anim","The whole strip fades red in and out with a gamma-corrected curve. One breath is 256 ticks, about 13 s at speed 128."],
+ [3,"Fire Effect","anim","Perlin noise through the heat palette: black, deep red, orange, yellow, white. Moves with time, not speed."],
+ [4,"Matrix Rain","random","Random dim-green pixels (CRGB::Green is #008000) that fade by 30 each tick."],
+ [5,"Strobe White","flash","Full white on one tick, off the next."],
+ [6,"Twinkle Star","random","Gold sparkles that fade slowly (10 per tick), so many stay lit at once."],
+ [7,"Color Wipe","anim","Paints one LED per tick in a slowly shifting hue, over the colors already there. Never clears."],
+ [8,"Comet Trail","anim","A cyan head runs along the strip with a short fading tail, one LED per tick."],
+ [9,"Aurora Borealis","anim","Noise picks teal-green for bright areas and violet for dark ones. Driven by time."],
+ [10,"Candle Light","random","Every LED flickers between amber shades at random each tick."],
+ [11,"Police Siren","anim","Left half red, then right half blue, switching every 10 ticks."],
+ [12,"Lava Lamp","anim","FastLED lava palette (blacks, maroons, red, orange, white) scrolling slowly."],
+ [13,"Ocean Wave","anim","FastLED ocean palette (navy, teal, aqua) scrolling along the strip."],
+ [14,"Neon Pulse","anim","The whole strip cycles through every hue together."],
+ [15,"Sunset Breeze","anim","Orange waves between deep orange and peach, rolling along the strip."],
+ [16,"Cyberpunk Glow","flash","Magenta and cyan, the whole strip switching every 2 ticks."],
+ [17,"Christmas Glow","anim","Alternating red and green LEDs that shift one place every 5 ticks."],
+ [18,"Halloween Pulse","anim","The whole strip swaps between orange and purple every 5 ticks."],
+ [19,"Fireworks Display","random","Single sparks in random colors that fade quickly (50 per tick)."],
+ [20,"Electric Storm","flash","Random full-white lightning flashes that drop off fast."],
+ [21,"Forest Canopy","anim","FastLED forest palette (greens and olive) scrolling along the strip."],
+ [22,"Desert Heat","static","Solid orange, RGB 255, 100, 0."],
+ [23,"Ice World","static","Solid ice blue, RGB 100, 200, 255."],
+ [24,"Pastel Dream","static","Solid pastel pink, RGB 255, 180, 200."],
+ [25,"Retro Arcade","anim","Tight rainbow bands: hue jumps 30 per LED and scrolls at double speed."],
+ [26,"Heartbeat","anim","Deep red pulse over a faint blue base, one pulse every 128 ticks."],
+ [27,"Glitch Pulse","flash","At random moments the whole strip jumps to a new color and holds it."],
+ [28,"Ripple Effect","anim","Cyan sine ripples about 26 LEDs apart, moving 4 steps per tick."],
+ [29,"Snake Motion","anim","A lime head with a medium tail runs along the strip."],
+ [30,"Beacon Light","anim","A yellow dot that sweeps back and forth, leaving a soft trail."],
+ [31,"Marquee Chase","anim","Every third LED gold, marching one place every 3 ticks, like theatre lights."],
+ [32,"Gradient Bounce","anim","Hue follows a sine of position, so colors sway back and forth."],
+ [33,"Plasma Wave","anim","Two sine waves added together, mapped to hue: shifting color blobs."],
+ [34,"Disco Flash","flash","A new random color on the whole strip every tick."],
+ [35,"Sunset Flare","static","Solid red-orange, RGB 255, 60, 0."],
+ [36,"Moonlight White","static","Solid warm white, RGB 255, 240, 200."],
+ [37,"Solar Flare","static","Solid orange, RGB 255, 80, 0."],
+ [38,"Cosmic Dust","random","Purple sparkles that fade slowly."],
+ [39,"Bubble Pop","random","Sky-blue sparkles that fade very slowly."],
+ [40,"Northern Lights","anim","Hues from green through teal to blue, waving along the strip."],
+ [41,"Hypnotic Ring","anim","A rainbow with hue 5 per LED, so one full rainbow spans about 51 LEDs."],
+ [42,"Meteor Shower","anim","A white dot that moves 2 LEDs per tick with a short tail."],
+ [43,"Emerald Dream","static","Solid emerald green, RGB 0, 200, 80."],
+ [44,"Golden Hour","static","Solid amber, RGB 255, 140, 0."],
+ [45,"Soft Candle","static","Solid dim amber, RGB 200, 80, 10."],
+ [46,"Rainbow Chase","anim","A rainbow with hue 10 per LED, scrolling twice as fast as Rainbow Wave."],
+ [47,"Dynamic Strobe","flash","Strobes on and off every tick, in a color that slowly changes."],
+ [48,"Candy Cane","anim","Red and white stripes, 2 LEDs each, moving one place every 4 ticks."],
+ [49,"Firefly Night","random","Yellow-green sparks that fade very slowly (8 per tick)."],
+ [50,"Zen Garden","static","Solid sea green, RGB 30, 180, 120."]
+];
+
+// ---------- page ----------
+var $=function(id){return document.getElementById(id)};
+var sims={},rows={},visible={},selected=1,filter="all";
+var groupsEl=$("groups");
+GROUPS.forEach(function(g){
+  var sec=document.createElement("section");sec.className="group";
+  var head=document.createElement("div");head.className="group-head";
+  var h=document.createElement("h2");h.textContent=g[0];var sp=document.createElement("span");sp.textContent="presets "+g[1]+"–"+g[2];
+  head.appendChild(h);head.appendChild(sp);sec.appendChild(head);
+  var list=document.createElement("div");list.className="rows";sec.appendChild(list);
+  PRESETS.filter(function(p){return p[0]>=g[1]&&p[0]<=g[2]}).forEach(function(p){
+    var b=document.createElement("button");b.className="row";b.type="button";b.dataset.id=p[0];b.dataset.kind=p[2];
+    b.setAttribute("aria-label","Preset "+p[0]+", "+p[1]+", "+KIND_LABEL[p[2]]);
+    var id=document.createElement("span");id.className="num-id";id.textContent=String(p[0]).padStart(2,"0");
+    var nm=document.createElement("span");nm.className="nm";nm.textContent=p[1];
+    var cv=document.createElement("canvas");cv.className="strip";
+    var k=document.createElement("span");k.className="kind k-"+p[2];k.textContent=KIND_LABEL[p[2]];
+    b.appendChild(id);b.appendChild(nm);b.appendChild(cv);b.appendChild(k);
+    b.addEventListener("click",function(){select(p[0],true)});
+    list.appendChild(b);
+    rows[p[0]]={el:b,cv:cv,p:p,sec:sec};
+    sims[p[0]]=new Sim(p[0]);
+  });
+  groupsEl.appendChild(sec);
+});
+
+// buffer canvas: 300 x 1 pixels, then scaled up for glow + crisp layers
+var buf=document.createElement("canvas");buf.width=N;buf.height=1;var bctx=buf.getContext("2d");var bimg=bctx.createImageData(N,1);
+var BRIGHT=200;
+function fillBuf(sim,count){
+  count=count||N;var d=bimg.data,L=sim.L,sc=BRIGHT;
+  for(var i=0;i<N;i++){var k=i*3,o=i*4;d[o]=scale8(L[k],sc);d[o+1]=scale8(L[k+1],sc);d[o+2]=scale8(L[k+2],sc);d[o+3]=255}
+  bctx.putImageData(bimg,0,0);
+}
+function fit(cv){var r=cv.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}return cv.getContext("2d")}
+function drawStrip(cv,sim){
+  var ctx=fit(cv),w=cv.width,h=cv.height;fillBuf(sim);
+  ctx.fillStyle="#06080A";ctx.fillRect(0,0,w,h);
+  ctx.imageSmoothingEnabled=true;ctx.globalAlpha=.55;ctx.drawImage(buf,0,0,N,1,0,0,w,h);
+  ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;var inset=Math.round(h*.28);ctx.drawImage(buf,0,0,N,1,0,inset,w,h-inset*2);
+}
+function drawZoom(cv,sim){
+  var ctx=fit(cv),w=cv.width,h=cv.height,n=60,step=w/n,r=Math.min(step*.34,h*.3),L=sim.L,sc=BRIGHT;
+  ctx.fillStyle="#06080A";ctx.fillRect(0,0,w,h);
+  ctx.fillStyle="#12161B";ctx.fillRect(0,h*.18,w,h*.64);
+  for(var i=0;i<n;i++){
+    var k=i*3,R=scale8(L[k],sc),G=scale8(L[k+1],sc),B=scale8(L[k+2],sc),x=step*(i+.5),y=h/2,lum=(R+G+B)/765;
+    if(lum>0.02){var g=ctx.createRadialGradient(x,y,0,x,y,step*.9);g.addColorStop(0,"rgba("+R+","+G+","+B+","+Math.min(.9,.35+lum)+")");g.addColorStop(1,"rgba("+R+","+G+","+B+",0)");
+      ctx.fillStyle=g;ctx.fillRect(x-step,0,step*2,h)}
+    ctx.fillStyle="#2A3038";ctx.fillRect(x-r*1.25,y-r*1.25,r*2.5,r*2.5);
+    ctx.fillStyle="rgb("+Math.max(R,24)+","+Math.max(G,26)+","+Math.max(B,30)+")";
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  }
+}
+
+// highlight C++ lightly
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function hl(code){
+  return esc(code).split("\n").map(function(line){
+    var ci=line.indexOf("//"),c="";if(ci>=0){c='<span class="cm">'+line.slice(ci)+"</span>";line=line.slice(0,ci)}
+    line=line.replace(/\b(case|break|for|if|else|int|uint8_t|static|uint16_t)\b/g,'<span class="kw">$1</span>')
+             .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\()/g,'<span class="fn">$1</span>')
+             .replace(/(^|[^a-zA-Z_#])(\d+)/g,'$1<span class="num">$2</span>');
+    return line+c}).join("\n");
+}
+
+function select(id,scroll){
+  if(rows[selected])rows[selected].el.removeAttribute("aria-current");
+  selected=id;var p=rows[id].p;rows[id].el.setAttribute("aria-current","true");
+  $("hId").textContent="#"+String(id).padStart(2,"0");$("hName").textContent=p[1];
+  var hk=$("hKind");hk.className="kind k-"+p[2];hk.textContent=KIND_LABEL[p[2]];
+  $("hDesc").textContent=p[3];$("hApi").textContent="POST /api/preset?id="+id;
+  $("hCode").innerHTML=hl(CASES[id]||"");
+  if(scroll)window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  drawStrip($("big"),sims[id]);drawZoom($("zoom"),sims[id]);
+}
+$("hApi").addEventListener("click",function(){var t=this.textContent,b=this;
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){b.textContent="Copied";setTimeout(function(){b.textContent=t},1200)},function(){})}});
+
+// controls
+var SPEED=128,paused=false,allowFlash=false;
+function tickMs(){var d=Math.floor((255-SPEED)*98/255)+2;return d}
+function updateTickLabel(){var d=tickMs();$("tick").textContent="tick "+d+" ms"+(d<9?" · strip caps at ~9 ms":"")}
+$("speed").addEventListener("input",function(){SPEED=+this.value;$("speedV").textContent=SPEED;updateTickLabel()});
+$("bright").addEventListener("input",function(){BRIGHT=+this.value;$("brightV").textContent=BRIGHT;if(paused)redrawAll()});
+$("flash").addEventListener("change",function(){allowFlash=this.checked;$("flashNote").hidden=allowFlash});
+$("pause").addEventListener("click",function(){paused=!paused;this.textContent=paused?"Play":"Pause";this.setAttribute("aria-pressed",paused);this.classList.toggle("on",paused)});
+Array.prototype.forEach.call(document.querySelectorAll(".chip"),function(c){c.addEventListener("click",function(){
+  filter=c.dataset.f;Array.prototype.forEach.call(document.querySelectorAll(".chip"),function(x){x.setAttribute("aria-pressed",x===c)});
+  Object.keys(rows).forEach(function(id){var r=rows[id];r.el.hidden=!(filter==="all"||r.p[2]===filter)});
+  Array.prototype.forEach.call(document.querySelectorAll("section.group"),function(s){s.hidden=!s.querySelector(".row:not([hidden])")});
+})});
+
+// only draw rows on screen
+var io=new IntersectionObserver(function(es){es.forEach(function(e){visible[e.target.dataset.id]=e.isIntersecting})},{rootMargin:"100px"});
+Object.keys(rows).forEach(function(id){io.observe(rows[id].el)});
+
+function redrawAll(){Object.keys(rows).forEach(function(id){if(visible[id])drawStrip(rows[id].cv,sims[id])});drawStrip($("big"),sims[selected]);drawZoom($("zoom"),sims[selected])}
+
+// warm every sim up so the first frame is a real one
+var t0=performance.now();
+Object.keys(sims).forEach(function(id){for(var i=0;i<120;i++)sims[id].step(i*50)});
+
+var acc=0,last=performance.now(),flashAcc=0;
+function frame(now){
+  var dt=Math.min(now-last,250);last=now;
+  if(!paused){
+    var d=Math.max(tickMs(),9);acc+=dt;flashAcc+=dt;var steps=0,ms=now-t0;
+    var doFlash=allowFlash||flashAcc>=500;if(doFlash&&!allowFlash)flashAcc=0;
+    while(acc>=d&&steps<12){acc-=d;steps++;
+      Object.keys(sims).forEach(function(id){var s=sims[id];if(s&&rows[id].p[2]==="flash"&&!allowFlash)return;s.step(ms)});
+    }
+    if(!allowFlash&&doFlash)Object.keys(sims).forEach(function(id){if(rows[id].p[2]==="flash")sims[id].step(ms)});
+    if(acc>d*12)acc=0;
+  }
+  redrawAll();
+  requestAnimationFrame(frame);
+}
+updateTickLabel();
+if(matchMedia("(prefers-reduced-motion: reduce)").matches){paused=true;$("pause").textContent="Play";$("pause").classList.add("on");$("pause").setAttribute("aria-pressed","true")}
+select(1,false);
+requestAnimationFrame(frame);
+window.addEventListener("resize",redrawAll);
+})();
+</script>
+
+</body>
+</html>

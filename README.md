@@ -1,0 +1,184 @@
+# MORAG Mobile Lighting Application – Prototype
+
+An Android app (Flutter) that controls a 5 m 12V WS2815 LED strip through an ESP32.
+
+```
+open app → connect to device AP → connect device to the Wi-Fi → access the device (IP + login)
+```
+
+The ESP32 always runs its own Wi-Fi (the **device AP**, `192.168.4.1`). From the app you
+send it the site Wi-Fi name and password; it joins that network too and gets an IP address
+there. The app shows that IP, the phone goes back to the site Wi-Fi, and the user signs in.
+
+```
+morag/
+├─ START_HERE.txt                                   step-by-step setup guide
+├─ firmware/morag_controller/morag_controller.ino   ESP32 code (Arduino IDE)
+├─ firmware/morag_controller/portal_html.h          captive portal page (keep next to the .ino)
+├─ .github/workflows/build-apk.yml                  optional cloud APK build
+└─ app/                                             Flutter app
+   ├─ pubspec.yaml
+   ├─ lib/main.dart, api.dart, models.dart, storage.dart, light_controller.dart
+   ├─ lib/screens/connect_screen.dart   device AP · Wi-Fi · IP address · login (also the profile screen)
+   ├─ lib/screens/home_screen.dart      color wheel · speed · brightness · effects · brands grid
+   ├─ lib/screens/brand_editor.dart     add brand: logo · name · speed · brightness · colors · effect
+   ├─ android/app/src/main/AndroidManifest.xml      permissions + plain-HTTP to the controller
+   └─ test/widget_test.dart
+```
+
+## Default credentials (change them in the app: avatar → Device profile)
+
+| What | Default |
+|---|---|
+| Device AP name | `MORAG-Light` |
+| Device AP password | `morag2026` |
+| App username | `admin` |
+| App password | `morag1234` |
+
+Forgot them? While the controller is running, hold its **BOOT** button for 5 seconds.
+The strip flashes white and the controller restarts with the defaults above
+and forgets the site Wi-Fi.
+(Don't hold BOOT while plugging in power: that starts the firmware-upload mode.)
+
+## 1. Flash the ESP32
+
+1. Arduino IDE 2.x → **Boards Manager** → install **esp32 by Espressif Systems** (2.0.x or 3.x).
+2. **Library Manager** → install **FastLED** (3.9 or later).
+3. Open `firmware/morag_controller/morag_controller.ino`.
+4. Board: **ESP32 Dev Module**. Pick the COM port and click **Upload**
+   (on some boards, hold BOOT when "Connecting…" appears, then release).
+5. Open **Serial Monitor** at 115200 baud. You should see `Wi-Fi ready: MORAG-Light at 192.168.4.1`,
+   and after Wi-Fi setup `Site Wi-Fi connected, IP 192.168.x.x`.
+   You can type commands there too, for example `COLOR,#FF0000`.
+
+Settings at the top of the sketch: `DATA_PIN` (16), `NUM_LEDS` (300), `PSU_MILLIAMPS` (8000).
+
+### Wiring
+
+| From | To |
+|---|---|
+| ESP32 GPIO 16 | 74AHCT125 input → output → 330 Ω → strip **DI** |
+| Strip **BI** (backup data) | GND |
+| Strip +12V and GND | 12V 10A supply (feed both ends of the 5 m strip) |
+| ESP32 VIN/5V and GND | 12V→5V buck converter output |
+| All grounds | tied together |
+
+## 2. Build the app
+
+Requires Flutter 3.22 or later and Android Studio (Android SDK).
+
+```bash
+cd app
+flutter create --platforms=android --org com.morag --project-name morag_lighting .
+flutter pub get
+flutter run            # phone connected by USB with developer mode on
+# or build an installable file:
+flutter build apk --release   # → build/app/outputs/flutter-apk/app-release.apk
+```
+
+`flutter create .` only adds the missing Android project files. It keeps the
+`lib/`, `test/` and `AndroidManifest.xml` already here. If your Flutter version
+overwrites the manifest, copy this repo's `AndroidManifest.xml` back over it.
+The key line is `android:usesCleartextTraffic="true"`, without it Android blocks
+`http://192.168.4.1`.
+
+## 3. Use it (matches the flow)
+
+1. **Open the app.** Power the controller first.
+2. **Connect to device AP**: tap *Connect device AP* (Android asks to confirm), or join
+   `MORAG-Light` from Android Settings and choose **Stay connected** when it warns "no internet".
+   The card turns to "Connected to MORAG-Light".
+3. **Connect device to Wi-Fi**: type the site SSID and password, tap *Connect to Wi-Fi*.
+   The card shows "Connecting…" then "Connected to <SSID>", and the **IP address** fills in.
+   The device AP can drop for a few seconds while the ESP32 joins; the app keeps checking.
+4. Tap **Switch phone to <SSID>** so the phone goes back to the site Wi-Fi.
+5. **User login**: sign in. The app reaches the device at the IP address shown.
+   (No site Wi-Fi? Skip step 3–4 and sign in over the device AP at `192.168.4.1`.)
+6. **Home**: color wheel, speed, brightness, effects dropdown, and the brands grid.
+   Tap a brand to apply it, long-press to edit, **add brand** to create one.
+7. **Add brand**: tap the circle to pick a logo from the gallery, then name, speed,
+   brightness, up to three colors (tap a dot, set it with the wheel; *+* adds one),
+   effect. *Preview* shows it on the strip; *Save* keeps it on the phone.
+8. **Avatar (top left)** opens the device profile: the same Wi-Fi status, the IP address,
+   change login, change the device AP, sign out.
+
+Next time, the app remembers the IP address, so steps 2–4 are only needed once per site.
+Routers can hand out a new IP after a restart; reserve the device's IP in the router
+(DHCP reservation) for a fixed address.
+
+## Captive portal (no app needed)
+
+Join `MORAG-Light` from any phone or laptop: the MORAG page opens by itself
+(or browse to `http://192.168.4.1`). It has the same steps and screens as the app:
+device AP status, Wi-Fi scan and setup, IP address, login, then the color wheel,
+speed, brightness, effects, brands, add brand, and the device profile.
+On the site Wi-Fi, the same page opens at the device IP.
+Portal brands are saved on the ESP32 (`/api/brands`); app brands are saved on the phone.
+
+## Build note: NDK version
+
+If `flutter build apk` stops with "NDK … did not install", set the version you have in
+`android/app/build.gradle.kts`, e.g. `ndkVersion = "30.0.16248370"`, then
+`flutter clean`, `flutter pub get`, `flutter build apk --release`.
+
+## Security (prototype level)
+
+- The device AP uses WPA2. Wi-Fi setup without a login is accepted only over the device AP;
+  from the site network it needs a login.
+- On the site Wi-Fi, anyone on that network can reach the device, but every command still needs a login.
+- Every command needs a session token from `/api/login`. Without it the controller replies 401.
+- The password is stored on the ESP32 as a salted SHA-256 hash, not as plain text.
+- Five wrong passwords lock sign-in for 30 seconds. A session lasts 12 hours; a new sign-in
+  replaces the old one (one phone at a time).
+- Traffic is plain HTTP inside the WPA2 network. For production, add HTTPS or a stronger
+  scheme, per-user accounts, and remove the default passwords.
+
+## Controller API
+
+`POST`, form-encoded, at `http://192.168.4.1` (device AP) or the device IP on the site Wi-Fi.
+
+| Path | Fields | Reply |
+|---|---|---|
+| `/api/info` | none | `{"ap_ssid","ap_ip","via_ap","sta_ssid","sta_status","sta_ip"}` |
+| `/api/provision` | `ssid`, `pass` (+ `t` when not on the device AP) | `OK,PROVISION connecting` (empty `ssid` forgets it) |
+| `/api/login` | `user`, `pass` | `{"token":"…"}` or 401 / 429 |
+| `/api/cmd` | `t`, `c` (one command) | `OK,…` · `ERR,…` (400) · `STATE,…` |
+| `/api/status` | `t` | `STATE,…` |
+| `/api/account` | `t`, `old`, `user`, `pass` | `OK,ACCOUNT` (sign in again) |
+| `/api/wifi` | `t`, `ssid`, `pass` | changes the device AP; `OK,WIFI restarting` |
+| `/api/logout` | `t` | `OK,LOGOUT` |
+
+Commands (also work in the Serial Monitor):
+
+```
+POWER,1 | POWER,0
+COLOR,#RRGGBB
+BRIGHT,0-100
+EFFECT,solid|breathe|wipe|chase|gradient|rainbow,<speed 1-100>
+PRESET,<name>,<effect>,<speed>,<bright>,#c1[,#c2[,#c3]]
+STATUS        → STATE,<power>,<bright>,<effect>,<speed>,#c1,#c2,#c3,<name>
+PING          → PONG
+```
+
+Test from a laptop on `MORAG-Light` (or on the site Wi-Fi, using the device IP):
+
+```bash
+curl http://192.168.4.1/api/info
+curl -d "ssid=MyStoreWiFi&pass=secret123" http://192.168.4.1/api/provision
+curl -d "user=admin&pass=morag1234" http://192.168.4.1/api/login
+curl -d "t=<token>&c=COLOR,%23FF0000" http://192.168.4.1/api/cmd
+```
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| "Device not found" | Phone and device must be on the same Wi-Fi, or the phone on `MORAG-Light`. Check the IP address. |
+| Wi-Fi setup says "not found" | ESP32 only joins **2.4 GHz** Wi-Fi. Check the SSID and that the router has 2.4 GHz on. |
+| Wi-Fi setup says "failed" | Wrong password, or a captive-portal/enterprise network (not supported). |
+| Device AP drops after setup | Normal: the AP moves to the router's channel. Rejoin `MORAG-Light` if you still need it. |
+| On the device AP, commands time out | Android moved to mobile data. Rejoin and choose *Stay connected*, or turn off mobile data. |
+| IP changed after a router restart | Reserve the device's IP in the router, or rerun step 2 to see the new IP. |
+| Red and green swapped | In the sketch change `GRB` to `RGB` in `addLeds`. |
+| First LEDs flicker | Strip BI not tied to GND, or missing level shifter. |
+| Colors fade toward the end | Feed 12V to the far end of the strip too. |
